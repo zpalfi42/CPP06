@@ -38,8 +38,7 @@ int to_int(char const *s)
     long long int result = 0;
     while(*s)
     {
-		std::cout << result << std::endl;
-         if ( *s < '0' || *s > '9' || result > 2147483647 || result < -2147483648)
+         if ( *s < '0' || *s > '9' )
            throw std::invalid_argument("invalid input string");
          result = result * 10  - (*s - '0');  //assume negative number
 		 if (result > 2147483647 || result < -2147483648)
