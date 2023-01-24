@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <limits.h>
 
 bool	isSpecialCase(std::string toConvert)
 {
@@ -24,6 +25,29 @@ bool	isSpecialCaseDouble(std::string toConvert)
 		return (false);
 	return (true);	
 }
+
+int to_int(char const *s)
+{
+    if ( s == NULL || *s == '\0' )
+       throw std::invalid_argument("null or empty string argument");
+    bool negate = (s[0] == '-');
+    if ( *s == '+' || *s == '-' ) 
+        ++s;
+    if ( *s == '\0')
+       throw std::invalid_argument("sign character only.");
+    long long int result = 0;
+    while(*s)
+    {
+		std::cout << result << std::endl;
+         if ( *s < '0' || *s > '9' || result > 2147483647 || result < -2147483648)
+           throw std::invalid_argument("invalid input string");
+         result = result * 10  - (*s - '0');  //assume negative number
+		 if (result > 2147483647 || result < -2147483648)
+		 	throw std::invalid_argument("invalid argument");
+         ++s;
+    }
+    return negate ? result : -result; //-result is positive!
+} 
 
 int	main( int argc, char **argv )
 {
@@ -56,20 +80,16 @@ int	main( int argc, char **argv )
 	}
 	else
 	{
-		std::string::size_type	sz;
 		int	n;
 		try
 		{
-			n = std::stoi(toConvert, &sz);
+			n = to_int(toConvert.c_str());
 		}
 		catch(const std::exception& e)
 		{
-			std::cout << "Error: Wrong argument (Too long INT)" << std::endl;
+			std::cout << "Error: Wrong argument" << std::endl;
 			return (0);
 		}
-		if (toConvert.length() == sz)
-			std::cout << "Is a INT" << std::endl;
-		else
-			std::cout << "Error: Wrong argument" << std::endl;
+		std::cout << "Is a INT " << n << std::endl;
 	}
 }
