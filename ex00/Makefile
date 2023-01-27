@@ -3,11 +3,12 @@ NAME			=	convert
 SRC_DIR		=	./src/
 OBJ_DIR		=	obj/
 
-INCS_DIR	=	./includes
+INCS_DIR	=	./includes/
 MAIN_INC	= -I $(INCS_DIR)
 INCS		=	$(shell find $(INCS_DIR) -type f -name "*.hpp")
 
 SRC			=	main.cpp   \
+				Convert.cpp
 				
 OBJ			=	$(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 
