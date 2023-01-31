@@ -4,11 +4,11 @@ Convert::Convert( void )
 {
 }
 
-Convert::Convert( Convert &c ): _s(c._s), _int(c._int), _float(c._float), _double(c._double), _valid(c._valid), _special(c._special)
+Convert::Convert( Convert &c ): _s(c._s), _int(c._int), _float(c._float), _double(c._double), _valid(c._valid), _special(c._special), _onlyDouble(c._onlyDouble), _noChar(false)
 {
 }
 
-Convert::Convert( std::string s ): _s(s), _valid(true), _special(false)
+Convert::Convert( std::string s ): _s(s), _valid(true), _special(false), _onlyDouble(false), _noChar(false)
 {
 }
 
@@ -136,14 +136,12 @@ float	Convert::toFloat(const char *s)
         ++s;
     if ( *s == '\0')
        throw std::invalid_argument("sign character only.");
-    double result = 0;
+    long double result = 0;
     while(*s != '.')
     {
         if ( *s < '0' || *s > '9' )
         	throw std::invalid_argument("invalid input string 1");
-		// std::cout << result << " * 10 - " << *s - '0' << " = ";
         result = result * 10  - (*s - '0');  //assume negative number
-		// std::cout << result << std::endl;
 		if (result > std::numeric_limits<float>::max() || result < std::numeric_limits<float>::lowest())
 			throw std::invalid_argument("invalid argument 1");
         ++s;
@@ -156,6 +154,40 @@ float	Convert::toFloat(const char *s)
         	throw std::invalid_argument("invalid input string 2");
 		result = result - (*s - '0') * mul;
 		if (result > std::numeric_limits<float>::max() || result < std::numeric_limits<float>::lowest())
+		 	throw std::invalid_argument("invalid argument 2");
+		mul *= 0.1;
+		++s;
+	}
+    return negate ? result : -result; //-result is positive!
+}
+
+double	Convert::toDouble(const char *s)
+{
+    if ( s == NULL || *s == '\0' )
+       throw std::invalid_argument("null or empty string argument");
+    bool negate = (s[0] == '-');
+    if ( *s == '+' || *s == '-' ) 
+        ++s;
+    if ( *s == '\0')
+       throw std::invalid_argument("sign character only.");
+    long double result = 0;
+    while(*s != '.')
+    {
+        if ( *s < '0' || *s > '9' )
+        	throw std::invalid_argument("invalid input string 1");
+        result = result * 10  - (*s - '0');  //assume negative number
+		if (result > std::numeric_limits<double>::max() || result < std::numeric_limits<double>::lowest())
+			throw std::invalid_argument("invalid argument 1");
+        ++s;
+    }
+	double	mul = 0.1;
+	s++;
+	while (*s)
+	{
+		if ( *s < '0' || *s > '9' )
+        	throw std::invalid_argument("invalid input string 2");
+		result = result - (*s - '0') * mul;
+		if (result > std::numeric_limits<double>::max() || result < std::numeric_limits<double>::lowest())
 		 	throw std::invalid_argument("invalid argument 2");
 		mul *= 0.1;
 		++s;
@@ -201,18 +233,31 @@ int		Convert::tryFloatOrDouble()
 				this->_double = static_cast<double>(this->_float);
 				this->_special = true;
 			}
-			try
+			else
 			{
-				this->_float = this->toFloat(this->_s.c_str());
+				try
+				{
+					this->_float = this->toFloat(this->_s.c_str());
+					this->_double = static_cast<double>(this->_float);
+					long long int	a = static_cast<long long int>(this->_float);
+					if (a > INT_MAX || a < INT_MIN)
+						this->_special = true;
+					else
+					{
+						this->_int = static_cast<int>(this->_float);
+						if (this->_int > 127)
+							this->_noChar = true;
+						else
+							this->_char = static_cast<char>(this->_int);
+					}
+				}
+				catch(const std::exception& e)
+				{
+					std::cout << e.what() << '\n';
+					this->_valid = false;
+					return (0);
+				}
 			}
-			catch(const std::exception& e)
-			{
-				std::cout << e.what() << '\n';
-				this->_valid = false;
-				return (0);
-			}
-			
-			std::numeric_limits<float>::max();
 		}
 		else if (isFloatOrDouble(1))
 		{
@@ -225,6 +270,36 @@ int		Convert::tryFloatOrDouble()
 				this->_double = (1.0 - i)/0.0;
 				this->_float = static_cast<float>(this->_double);
 				this->_special = true;
+			}
+			else
+			{
+				try
+				{
+					this->_double = this->toDouble(this->_s.c_str());
+					if (this->_double > std::numeric_limits<float>::max() || this->_double < std::numeric_limits<float>::lowest())
+						this->_onlyDouble = true;
+					else
+					{
+						this->_float = static_cast<float>(this->_double);
+						long long int	a = static_cast<long long int>(this->_float);
+						if (a > INT_MAX || a < INT_MIN)
+							this->_special = true;
+						else
+						{
+							this->_int = static_cast<int>(this->_float);
+							if (this->_int > 127)
+								this->_noChar = true;
+							else
+								this->_char = static_cast<char>(this->_int);
+						}
+					}
+				}
+				catch(const std::exception& e)
+				{
+					std::cout << e.what() << '\n';
+					this->_valid = false;
+					return (0);
+				}
 			}
 		}
 		else
@@ -242,7 +317,10 @@ int		Convert::tryInt()
 	try
 	{
 		this->_int = toInt(this->_s.c_str());
-		this->_char = static_cast<char>(this->_int);
+		if (this->_int > 127)
+			this->_noChar = true;
+		else
+			this->_char = static_cast<char>(this->_int);
 		this->_float = static_cast<float>(this->_int);
 		this->_double = static_cast<double>(this->_int);
 	}
@@ -276,7 +354,7 @@ void	Convert::convert( void )
 		std::cout << std::setprecision(1);
 
 		std::cout << "char: ";
-		if (this->_special)
+		if (this->_special || this->_onlyDouble || this->_noChar)
 			std::cout << "impossible" << std::endl;
 		else if (this->charDisplayable())
 			std::cout << this->_char << std::endl;
@@ -284,11 +362,18 @@ void	Convert::convert( void )
 			std::cout << "Non displayable" << std::endl;
 
 		std::cout << "int: ";
-		if (this->_special)
+		if (this->_special || this->_onlyDouble)
 			std::cout << "impossible" << std::endl;
 		else
 			std::cout << this->_int << std::endl;
-		std::cout << "float: " << this->_float << "f" << std::endl;
+
+		std::cout << "float: ";
+		if (this->_onlyDouble)
+			std::cout << "impossible" << std::endl;
+		else
+			std::cout << this->_float << "f" << std::endl;
+
 		std::cout << "double: " << this->_double << std::endl;
+
 	}
 }

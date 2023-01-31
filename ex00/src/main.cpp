@@ -11,11 +11,4 @@ int	main( int argc, char **argv )
 	Convert	c(toConvert);
 
 	c.convert();
-
-	// std::cout << std::endl << std::endl;
-
-	// float	f = std::numeric_limits<float>::max();
-	// int		i = static_cast<int>(f);
-
-	// std::cout << f << std::endl << i << std::endl;
 }

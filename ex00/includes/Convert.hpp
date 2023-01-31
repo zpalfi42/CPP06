@@ -16,6 +16,8 @@ private:
 	double				_double;
 	bool				_valid;
 	bool				_special;
+	bool				_onlyDouble;
+	bool				_noChar;
 public:
 	Convert( void );
 	Convert( Convert &c );
